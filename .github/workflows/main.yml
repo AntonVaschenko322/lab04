@@ -5,14 +5,12 @@ on: [push, pull_request]
 jobs:
   build:
     name: Build with CMake
-    runs-on: ${{ matrix.os }}  # Теперь зависит от ОС из матрицы
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]  # Добавляем Windows
+        compiler: [gcc, clang]
+        os: [ubuntu-latest, windows-latest]
         build-type: [Debug, Release]
-        exclude:  # Исключаем ненужные комбинации
-          - os: windows-latest
-            build-type: Debug  # Можно оставить, если нужен Debug на Windows
     
     steps:
       - uses: actions/checkout@v4
@@ -27,10 +25,13 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-          choco install ninja  # Рекомендуемый генератор для Windows
+          choco install ninja
       
       - name: Configure CMake
+        shell: bash  # Явно указываем использовать bash для кросс-платформенности
         run: |
+          echo "Current directory: $(pwd)"
+          ls -la  # Для отладки
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
             -DBUILD_TESTS=ON \
@@ -45,4 +46,3 @@ jobs:
           name: build-${{ matrix.os }}-${{ matrix.build-type }}
           path: build/
           retention-days: 1
-       
