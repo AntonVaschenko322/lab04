@@ -1,9 +1,9 @@
 name: Build with CMake
 
-on: [push, pull_request]  # Добавляем триггеры
+on: [push, pull_request]
 
 jobs:
-  build:  # Добавляем обязательный корневой ключ 'jobs'
+  build:
     name: Build with CMake
     runs-on: ubuntu-latest
     strategy:
@@ -29,4 +29,8 @@ jobs:
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.build-type }}  # Исправлено (было 2 закрывающих скобки)
+          path: build/
+          retention-days: 1
        
