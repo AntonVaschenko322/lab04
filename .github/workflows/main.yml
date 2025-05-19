@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   build:
     name: Build with CMake
-    runs-on: [ubuntu-latest, windows-latest]
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         build-type: [Debug, Release]
