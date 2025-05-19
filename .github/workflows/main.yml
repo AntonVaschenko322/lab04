@@ -1,0 +1,59 @@
+name: CMake Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        compiler: [gcc, clang]
+        exclude:
+          - os: windows-latest
+            compiler: clang  # Можно включить, если нужен Clang на Windows
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ cmake  # GCC по умолчанию
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            sudo apt-get install -y clang
+          fi
+
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          if ("${{ matrix.compiler }}" -eq "gcc") {
+            choco install mingw
+          } else {
+            # Для Clang на Windows может потребоваться LLVM
+            choco install llvm
+          }
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            if [ "${{ matrix.compiler }}" = "gcc" ]; then
+              cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ ..
+            else
+              cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ..
+            fi
+          else
+            # Windows (MinGW или MSVC/Clang)
+            cmake ..
+          fi
+
+      - name: Build
+        shell: bash
+        run: |
+          cd build
+          cmake --build . --config Release
