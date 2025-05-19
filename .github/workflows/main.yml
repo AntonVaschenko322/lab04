@@ -5,24 +5,36 @@ on: [push, pull_request]
 jobs:
   build:
     name: Build with CMake
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}  # Теперь зависит от ОС из матрицы
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]  # Добавляем Windows
         build-type: [Debug, Release]
+        exclude:  # Исключаем ненужные комбинации
+          - os: windows-latest
+            build-type: Debug  # Можно оставить, если нужен Debug на Windows
     
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install dependencies
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake
+      
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          choco install ninja  # Рекомендуемый генератор для Windows
       
       - name: Configure CMake
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
-            -DBUILD_TESTS=ON
+            -DBUILD_TESTS=ON \
+            ${{ matrix.os == 'windows-latest' && '-G "Ninja"' || '' }}
       
       - name: Build project
         run: cmake --build build --config ${{ matrix.build-type }}
@@ -30,7 +42,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.build-type }}  # Исправлено (было 2 закрывающих скобки)
+          name: build-${{ matrix.os }}-${{ matrix.build-type }}
           path: build/
           retention-days: 1
        
